@@ -1,5 +1,8 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom"; // Added useNavigate for search navigation
+import { useCart } from "../context/CartContext"; // 👈 Add this import
+import { signOut } from "firebase/auth"; // 👈 Add this import for logout
+import { auth } from "../firebase"; // 👈 Add this import for Firebase auth
 import {
   ShoppingCartIcon,
   HeartIcon,
@@ -14,12 +17,19 @@ import {
   FaInstagram,
   FaPinterest,
 } from "react-icons/fa";
+import LoginModal from "../components/LoginModal"; // 👈 Add import for LoginModal
+import RegisterModal from "../components/RegisterModal"; // 👈 Add import for RegisterModal
 
-const Navbar = () => {
+const Navbar = ({ user }) => { // 👈 Add user prop
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isAuthOpen, setIsAuthOpen] = useState(false); // login/register modal
-  const [authTab, setAuthTab] = useState("register"); // "login" or "register"
+  const [isLoginOpen, setIsLoginOpen] = useState(false); // 👈 New state for login modal
+  const [isRegisterOpen, setIsRegisterOpen] = useState(false); // 👈 New state for register modal
+  const [searchTerm, setSearchTerm] = useState(""); // 👈 Added for functional search
+
+  const { cartItems } = useCart(); // 👈 Get cart items
+  const cartItemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0); // 👈 Calculate total quantity
+  const navigate = useNavigate(); // 👈 For navigation on search
 
   const categories = [
     "New In",
@@ -31,6 +41,26 @@ const Navbar = () => {
     "Moods & Edits",
     "SELFCARE",
   ];
+
+  // 👈 Handle search submission
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    if (searchTerm.trim()) {
+      navigate(`/shop?search=${encodeURIComponent(searchTerm)}`); // Navigate to Shop with search param
+    }
+    setIsSearchOpen(false);
+    setSearchTerm("");
+  };
+
+  // 👈 Handle logout
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      alert("Logged out successfully!");
+    } catch (error) {
+      alert(`Logout failed: ${error.message}`);
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-white shadow">
@@ -75,25 +105,39 @@ const Navbar = () => {
           DONAVI.IN
         </Link>
 
-        {/* Right - Icons */}
-        <div className="flex items-center gap-4">
+        {/* Right - Icons (Hidden on Mobile to Avoid Duplication with BottomNav) */}
+        <div className="hidden lg:flex items-center gap-2 lg:gap-4 flex-wrap"> {/* 👈 Hidden on mobile (lg:flex) */}
           <button onClick={() => setIsSearchOpen(true)}>
             <MagnifyingGlassIcon className="h-6 w-6 text-gray-700 hover:text-black" />
           </button>
-          <button onClick={() => setIsAuthOpen(true)}>
-            <UserIcon className="h-6 w-6 text-gray-700 hover:text-black" />
-          </button>
+          
+          {user ? ( 
+            <div className="flex items-center gap-2">
+              <Link to="/profile">
+                <UserIcon className="h-6 w-6 text-gray-700 hover:text-black" />
+              </Link>
+              <button onClick={handleLogout} className="text-sm text-red-500 hover:underline">
+                Logout
+              </button>
+            </div>
+          ) : ( 
+            <button onClick={() => setIsLoginOpen(true)}>
+              <UserIcon className="h-6 w-6 text-gray-700 hover:text-black" />
+            </button>
+          )}
           <Link to="/wishlist" className="relative">
             <HeartIcon className="h-6 w-6 text-gray-700 hover:text-black" />
             <span className="absolute -top-2 -right-2 bg-pink-600 text-white text-xs rounded-full px-1">
-              0
+              0 {/* 👈 Wishlist badge (static for now, can make dynamic later) */}
             </span>
           </Link>
           <Link to="/Cart" className="relative">
             <ShoppingCartIcon className="h-6 w-6 text-gray-700 hover:text-black" />
-            <span className="absolute -top-2 -right-2 bg-pink-600 text-white text-xs rounded-full px-1">
-              0
-            </span>
+            {cartItemCount > 0 && ( // 👈 Only show badge if items exist
+              <span className="absolute -top-2 -right-2 bg-pink-600 text-white text-xs rounded-full px-1">
+                {cartItemCount}
+              </span>
+            )}
           </Link>
         </div>
       </nav>
@@ -132,106 +176,49 @@ const Navbar = () => {
         </div>
       )}
 
-      {/* 🔹 Fullscreen Search Modal */}
+      {/* 🔹 Fullscreen Search Modal (Now Functional) */}
       {isSearchOpen && (
         <div className="fixed inset-0 bg-white bg-opacity-95 flex items-center justify-center z-50">
           <div className="relative w-11/12 max-w-2xl">
-            <input
-              type="text"
-              placeholder="Search for products..."
-              className="w-full border-b-2 border-gray-400 focus:border-black px-4 py-3 outline-none text-lg bg-transparent"
-              autoFocus
-            />
-            <button
-              className="absolute top-3 right-3 text-2xl text-gray-600 hover:text-black"
-              onClick={() => setIsSearchOpen(false)}
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* 🔹 Login/Register Modal */}
-      {isAuthOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="relative bg-white w-11/12 max-w-md p-6 rounded shadow-lg">
-            {/* Close Button */}
-            <button
-              className="absolute top-3 right-3 text-gray-600 hover:text-black"
-              onClick={() => setIsAuthOpen(false)}
-            >
-              ✕
-            </button>
-
-            {/* Title */}
-            <h2 className="text-xl font-semibold mb-4">
-              {authTab === "register" ? "Register" : "Login"}
-            </h2>
-
-            {/* Form */}
-            <form className="space-y-4">
-              {authTab === "register" && (
-                <>
-                  <input
-                    type="text"
-                    placeholder="First name"
-                    className="w-full border px-3 py-2 text-sm outline-none"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Last name"
-                    className="w-full border px-3 py-2 text-sm outline-none"
-                  />
-                </>
-              )}
-
+            <form onSubmit={handleSearchSubmit}> {/* 👈 Added form with submit handler */}
               <input
-                type="email"
-                placeholder="Email *"
-                className="w-full border px-3 py-2 text-sm outline-none"
+                type="text"
+                placeholder="Search for products..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full border-b-2 border-gray-400 focus:border-black px-4 py-3 outline-none text-lg bg-transparent"
+                autoFocus
               />
-              <input
-                type="password"
-                placeholder="Password *"
-                className="w-full border px-3 py-2 text-sm outline-none"
-              />
-
               <button
                 type="submit"
-                className="w-full bg-black text-white py-2 font-medium"
+                className="absolute top-3 right-3 text-2xl text-gray-600 hover:text-black"
               >
-                {authTab === "register" ? "Register" : "Login"}
+                🔍 {/* Changed to search icon, or keep ✕ if preferred */}
               </button>
             </form>
-
-            {/* Switch between login/register */}
-            <div className="flex justify-between items-center mt-4 text-sm">
-              {authTab === "register" ? (
-                <p>
-                  Already have an account?{" "}
-                  <button
-                    onClick={() => setAuthTab("login")}
-                    className="underline"
-                  >
-                    Log in here
-                  </button>
-                </p>
-              ) : (
-                <p>
-                  Don’t have an account?{" "}
-                  <button
-                    onClick={() => setAuthTab("register")}
-                    className="underline"
-                  >
-                    Register here
-                  </button>
-                </p>
-              )}
-            </div>
           </div>
         </div>
       )}
+
+      {/* 🔹 Login Modal */}
+      <LoginModal
+        isOpen={isLoginOpen}
+        onClose={() => setIsLoginOpen(false)}
+        onSwitchToRegister={() => {
+          setIsLoginOpen(false);
+          setIsRegisterOpen(true);
+        }}
+      />
+
+      {/* 🔹 Register Modal */}
+      <RegisterModal
+        isOpen={isRegisterOpen}
+        onClose={() => setIsRegisterOpen(false)}
+        onSwitchToLogin={() => {
+          setIsRegisterOpen(false);
+          setIsLoginOpen(true);
+        }}
+      />
     </header>
   );
 };
