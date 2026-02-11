@@ -65,7 +65,7 @@ export default function Checkout({ user }) {
       } else {
         // Integrate Razorpay for other payments
         const options = {
-          key: "YOUR_RAZORPAY_KEY_ID", // 👈 Replace with your actual Razorpay key (e.g., "rzp_test_...")
+          key: "rzp_live_SEuOQtC4rXNuWx",
           amount: total * 100, // Amount in paisa (₹1 = 100 paisa)
           currency: "INR",
           name: "DONAVI.IN",
