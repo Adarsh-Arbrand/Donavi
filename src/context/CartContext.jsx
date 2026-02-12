@@ -84,7 +84,7 @@ export const CartProvider = ({ children }) => {
         removeFromCart,
         clearCart,
         subtotal,
-        gst, // 👈 Added GST
+        gst, 
         shipping,
         total,
         progress,

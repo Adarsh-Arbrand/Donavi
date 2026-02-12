@@ -12,13 +12,13 @@ import {
 } from "@heroicons/react/24/outline";
 
 const Admin = ({ user }) => {
-    console.log("Admin component loaded, user:", user);
+  console.log("Admin component loaded, user:", user); // Debug log - remove after testing
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("orders");
   const [orders, setOrders] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [dataLoading, setDataLoading] = useState(false); // New: For fetch loading
+  const [dataLoading, setDataLoading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [editModal, setEditModal] = useState({ open: false, type: "", data: null });
   const [editData, setEditData] = useState({ status: "" });
@@ -33,8 +33,13 @@ const Admin = ({ user }) => {
     }, 3000);
   };
 
-  // Check if user is admin
+  // Check if user is admin - only run when user is available
   useEffect(() => {
+    if (user === null) {
+      // Still loading auth state - do nothing yet
+      return;
+    }
+
     const checkAdmin = async () => {
       if (user) {
         const userDocRef = doc(db, "users", user.uid);
@@ -50,6 +55,7 @@ const Admin = ({ user }) => {
           navigate("/");
         }
       } else {
+        addNotification("Please log in to access the admin dashboard.", "error");
         navigate("/");
       }
       setLoading(false);
@@ -106,6 +112,16 @@ const Admin = ({ user }) => {
       default: return "bg-gray-100 text-gray-800";
     }
   };
+
+  // Show loading if user is still null (auth loading)
+  if (user === null) {
+    return (
+      <main className="max-w-7xl mx-auto px-6 py-16 text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto"></div>
+        <p className="mt-4 text-gray-600">Checking authentication...</p>
+      </main>
+    );
+  }
 
   if (loading) {
     return (

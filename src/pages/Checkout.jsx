@@ -112,7 +112,7 @@ export default function Checkout({ user }) {
             contact: billingDetails.phone,
           },
           theme: {
-            color: "#dc2626", // Red theme
+            color: "#dc2626", 
           },
         };
         const rzp = new window.Razorpay(options);
