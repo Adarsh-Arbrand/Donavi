@@ -17,6 +17,7 @@ const Admin = ({ user }) => {
   const [orders, setOrders] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(false); // New: For fetch loading
   const [isAdmin, setIsAdmin] = useState(false);
   const [editModal, setEditModal] = useState({ open: false, type: "", data: null });
   const [editData, setEditData] = useState({ status: "" });
@@ -37,6 +38,9 @@ const Admin = ({ user }) => {
       if (user) {
         const userDocRef = doc(db, "users", user.uid);
         const userDocSnap = await getDoc(userDocRef);
+        console.log("Admin check - User UID:", user.uid); // Debug
+        console.log("Admin check - Doc exists:", userDocSnap.exists()); // Debug
+        console.log("Admin check - Is admin:", userDocSnap.data()?.isAdmin); // Debug
         if (userDocSnap.exists() && userDocSnap.data().isAdmin) {
           setIsAdmin(true);
           fetchData();
@@ -54,6 +58,7 @@ const Admin = ({ user }) => {
 
   // Fetch orders and users
   const fetchData = async () => {
+    setDataLoading(true);
     try {
       // Fetch all orders
       const ordersSnapshot = await getDocs(collection(db, "orders"));
@@ -67,6 +72,7 @@ const Admin = ({ user }) => {
     } catch (error) {
       addNotification(`Failed to fetch data: ${error.message}`, "error");
     }
+    setDataLoading(false);
   };
 
   // Handle status update
@@ -173,76 +179,94 @@ const Admin = ({ user }) => {
         {activeTab === "orders" && (
           <div className="bg-white p-6 rounded-lg shadow-md">
             <h2 className="text-xl font-semibold mb-6">All Orders</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full table-auto">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-2">Order ID</th>
-                    <th className="text-left p-2">User</th>
-                    <th className="text-left p-2">Total</th>
-                    <th className="text-left p-2">Status</th>
-                    <th className="text-left p-2">Date</th>
-                    <th className="text-left p-2">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {orders.map((order) => (
-                    <tr key={order.id} className="border-b hover:bg-gray-50">
-                      <td className="p-2">{order.orderId}</td>
-                      <td className="p-2">{order.billingDetails?.firstName} {order.billingDetails?.lastName}</td>
-                      <td className="p-2">₹{order.total.toFixed(2)}</td>
-                      <td className="p-2">
-                        <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(order.status)}`}>
-                          {order.status}
-                        </span>
-                      </td>
-                      <td className="p-2">{new Date(order.createdAt.seconds * 1000).toLocaleDateString()}</td>
-                      <td className="p-2">
-                        <button
-                          onClick={() => setEditModal({ open: true, type: "order", data: order })}
-                          className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition-colors"
-                        >
-                          Update Status
-                        </button>
-                      </td>
+            {dataLoading ? (
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500 mx-auto"></div>
+                <p className="mt-2 text-gray-600">Loading orders...</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full table-auto">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-2">Order ID</th>
+                      <th className="text-left p-2">User</th>
+                      <th className="text-left p-2">Total</th>
+                      <th className="text-left p-2">Status</th>
+                      <th className="text-left p-2">Date</th>
+                      <th className="text-left p-2">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {orders.map((order) => (
+                      <tr key={order.id} className="border-b hover:bg-gray-50">
+                        <td className="p-2">{order.orderId}</td>
+                        <td className="p-2">{order.billingDetails?.firstName} {order.billingDetails?.lastName}</td>
+                        <td className="p-2">₹{order.total.toFixed(2)}</td>
+                        <td className="p-2">
+                          <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(order.status)}`}>
+                            {order.status}
+                          </span>
+                        </td>
+                        <td className="p-2">
+                          {order.createdAt?.seconds ? new Date(order.createdAt.seconds * 1000).toLocaleDateString() : "N/A"}
+                        </td>
+                        <td className="p-2">
+                          <button
+                            onClick={() => setEditModal({ open: true, type: "order", data: order })}
+                            className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition-colors"
+                          >
+                            Update Status
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 
         {activeTab === "users" && (
           <div className="bg-white p-6 rounded-lg shadow-md">
             <h2 className="text-xl font-semibold mb-6">All Users</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full table-auto">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-2">Name</th>
-                    <th className="text-left p-2">Email</th>
-                    <th className="text-left p-2">Phone</th>
-                    <th className="text-left p-2">Orders</th>
-                    <th className="text-left p-2">Joined</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map((userData) => {
-                    const userOrders = orders.filter(order => order.userId === userData.id);
-                    return (
-                      <tr key={userData.id} className="border-b hover:bg-gray-50">
-                        <td className="p-2">{userData.firstName} {userData.lastName}</td>
-                        <td className="p-2">{userData.email || "N/A"}</td>
-                        <td className="p-2">{userData.phone || "N/A"}</td>
-                        <td className="p-2">{userOrders.length}</td>
-                        <td className="p-2">{userData.createdAt ? new Date(userData.createdAt.seconds * 1000).toLocaleDateString() : "N/A"}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            {dataLoading ? (
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500 mx-auto"></div>
+                <p className="mt-2 text-gray-600">Loading users...</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full table-auto">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-2">Name</th>
+                      <th className="text-left p-2">Email</th>
+                      <th className="text-left p-2">Phone</th>
+                      <th className="text-left p-2">Orders</th>
+                      <th className="text-left p-2">Joined</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.map((userData) => {
+                      const userOrders = orders.filter(order => order.userId === userData.id);
+                      return (
+                        <tr key={userData.id} className="border-b hover:bg-gray-50">
+                          <td className="p-2">{userData.firstName} {userData.lastName}</td>
+                          <td className="p-2">{userData.email || "N/A"}</td>
+                          <td className="p-2">{userData.phone || "N/A"}</td>
+                          <td className="p-2">{userOrders.length}</td>
+                          <td className="p-2">
+                            {userData.createdAt?.seconds ? new Date(userData.createdAt.seconds * 1000).toLocaleDateString() : "N/A"}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 
