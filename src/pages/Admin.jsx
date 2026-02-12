@@ -12,6 +12,7 @@ import {
 } from "@heroicons/react/24/outline";
 
 const Admin = ({ user }) => {
+    console.log("Admin component loaded, user:", user);
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("orders");
   const [orders, setOrders] = useState([]);
