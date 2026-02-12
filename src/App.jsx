@@ -11,8 +11,10 @@ import Cart from "./pages/Cart";
 import ProductDetails from "./pages/ProductDetails";
 import Checkout from "./pages/Checkout"; // 👈 Ensure this is imported
 import Shop from "./pages/Shop";
-import Profile from "./pages/Profile"
-import OrderSuccess from "./pages/OrderSuccess"
+import Profile from "./pages/Profile";
+import OrderSuccess from "./pages/OrderSuccess";
+import Admin from "./pages/Admin"; 
+
 function App() {
   const [user, setUser] = useState(null); // 👈 Add state for current user
 
@@ -39,6 +41,7 @@ function App() {
             <Route path="/shop/:category?" element={<Shop />} />
             <Route path="/profile" element={<Profile user={user} />} />
             <Route path="/order-success" element={<OrderSuccess />} />
+            <Route path="/admin" element={<Admin user={user} />} /> {/* Updated: Pass user prop */}
           </Routes>
         </main>
         <BottomNav user={user} /> {/* 👈 Pass user to BottomNav */}

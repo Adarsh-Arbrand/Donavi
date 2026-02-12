@@ -2,16 +2,16 @@
 export const products = [
   {
     id: 1,
-    title: "Front View Modern Dark Sunglasses",
-    price: 120.00, // INR
-    oldPrice: 150.00,
-    discount: 20,
+    title: "Floral Ruched Tube Dress",
+    price: 1499,
+    oldPrice: 2500,
+    discount: 40,
     images: ["/images/banner-slide-3.jpeg", "/images/banner-slide-1.jpeg", "/images/banner-slide-2.jpeg"],
     category: "New In",
     shortDescription: "Aliquam hendrerit a augue insuscipit. Etiam aliquam massa quis des mauris commodo venenatis ligula commodo leez sed blandit convallis dignissim.",
     description: "Phasellus eget fermentum mauris. Suspendisse nec dignissim nulla. Integer non quam commodo, scelerisque felis id, eleifend turpis. Vivamus sit amet efficitur velit. Phasellus eget fermentum mauris. Suspendisse nec dignissim nulla.",
-    sizes: ["S", "M", "L", "XL", "XXL"],
-    colors: ["green", "blue", "red", "black"],
+    sizes: ["XS", "S", "M",],
+    colors: ["Off-"],
     reviews: [
       {
         name: "Temptics Pro",
@@ -29,7 +29,7 @@ export const products = [
   },
   {
     id: 2,
-    title: "Classic Floral Dress",
+    title: "Bodycon Stretch Slip Dress",
     price: 250.00,
     oldPrice: 300.00,
     discount: 15,
@@ -50,7 +50,7 @@ export const products = [
   },
   {
     id: 3,
-    title: "Denim Mini Skirt",
+    title: "Cotton Co-ord Set",
     price: 180.00,
     oldPrice: 220.00,
     discount: 18,
@@ -71,7 +71,7 @@ export const products = [
   },
   {
     id: 4,
-    title: "Cotton Crop Top",
+    title: "Sleeveless Cotton Co-ord",
     price: 150.00,
     oldPrice: 180.00,
     discount: 17,
@@ -92,7 +92,7 @@ export const products = [
   },
   {
     id: 5,
-    title: "Embroidered Kurti",
+    title: "Halter Co-ord Set",
     price: 320.00,
     oldPrice: 400.00,
     discount: 20,
@@ -113,7 +113,7 @@ export const products = [
   },
   {
     id: 6,
-    title: "Graphic Tee Set",
+    title: "Floral Printed Halter Co-ord Set",
     price: 220.00,
     oldPrice: 260.00,
     discount: 15,
@@ -134,7 +134,7 @@ export const products = [
   },
   {
     id: 7,
-    title: "Lace Blouse",
+    title: "Linen Shirt-Style Top With Lace-up Pants Co-ord Set",
     price: 280.00,
     oldPrice: 350.00,
     discount: 20,
@@ -155,7 +155,7 @@ export const products = [
   },
   {
     id: 8,
-    title: "High-Waisted Jeans",
+    title: "Floral Back- Tie Ankle-Length Cotton Dress",
     price: 350.00,
     oldPrice: 420.00,
     discount: 17,
@@ -176,7 +176,7 @@ export const products = [
   },
   {
     id: 9,
-    title: "Tulle Skirt",
+    title: "Cotton Peplum Top With Straight-Fit Pants Co-ord set",
     price: 200.00,
     oldPrice: 250.00,
     discount: 20,
@@ -197,7 +197,7 @@ export const products = [
   },
   {
     id: 10,
-    title: "Striped Polo Shirt",
+    title: "Printed Cotton Back Tie-up Kurti",
     price: 160.00,
     oldPrice: 190.00,
     discount: 16,

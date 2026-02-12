@@ -23,16 +23,16 @@ export default function Checkout({ user }) {
     email: "",
     notes: "",
   });
-  const [orderPlaced, setOrderPlaced] = useState(false); // 👈 For success message
-  const [isLoginOpen, setIsLoginOpen] = useState(false); // 👈 Add for login modal
-  const [isRegisterOpen, setIsRegisterOpen] = useState(false); // 👈 Add for register modal
-  const [loading, setLoading] = useState(true); // 👈 Add loading state
-  const navigate = useNavigate(); // 👈 For redirect after order
+  const [orderPlaced, setOrderPlaced] = useState(false); // For success message
+  const [isLoginOpen, setIsLoginOpen] = useState(false); // Add for login modal
+  const [isRegisterOpen, setIsRegisterOpen] = useState(false); // Add for register modal
+  const [loading, setLoading] = useState(true); // Add loading state
+  const navigate = useNavigate(); // For redirect after order
 
-  // 👈 Wait for user auth state to load, with timeout fallback
+  // Wait for user auth state to load, with timeout fallback
   useEffect(() => {
-    console.log("Checkout: user prop =", user); // 👈 Debug log for user prop
-    if (user !== undefined) { // 👈 Fixed: Check for undefined
+    console.log("Checkout: user prop =", user); // Debug log for user prop
+    if (user != null) { // Fixed: Check for null or undefined
       setLoading(false);
     }
     // Fallback: If auth doesn't load in 3 seconds, stop loading
@@ -52,15 +52,38 @@ export default function Checkout({ user }) {
   // Handle order placement with payment and Firestore save
   const handlePlaceOrder = async (e) => {
     e.preventDefault();
-    // Basic validation (expand as needed)
-    if (!billingDetails.firstName || !billingDetails.email) {
-      alert("Please fill in required fields.");
+    // Check if cart is empty
+    if (cartItems.length === 0) {
+      alert("Your cart is empty.");
+      return;
+    }
+    // Expanded validation
+    if (!billingDetails.firstName || !billingDetails.email || !billingDetails.address || !billingDetails.city || !billingDetails.pin || !billingDetails.phone) {
+      alert("Please fill in all required fields.");
       return;
     }
 
+    const orderData = {
+      userId: user.uid,
+      orderId: `ORD-${Date.now()}`, // Generate unique order ID
+      items: cartItems,
+      subtotal,
+      gst,
+      shipping,
+      total,
+      paymentMethod: payment,
+      billingDetails,
+      status: "Placed", // Can update to "Shipped", etc., later
+      createdAt: new Date(),
+    };
+
     try {
       if (payment === "cod") {
-        // Simulate COD success
+        // Save order to Firestore for COD
+        await addDoc(collection(db, "orders"), orderData);
+        clearCart();
+        setOrderPlaced(true);
+        // Removed immediate navigate to show success message
         alert("Order placed successfully with Cash on Delivery!");
       } else {
         // Integrate Razorpay for other payments
@@ -70,9 +93,18 @@ export default function Checkout({ user }) {
           currency: "INR",
           name: "DONAVI.IN",
           description: "Order Payment",
-          handler: function (response) {
-            // Payment success
+          handler: async function (response) {
+            // Payment success: Save order to Firestore
+            await addDoc(collection(db, "orders"), orderData);
+            clearCart();
+            setOrderPlaced(true);
+            navigate("/profile"); // Redirect after success
             alert(`Payment successful! Payment ID: ${response.razorpay_payment_id}`);
+          },
+          modal: {
+            ondismiss: function () {
+              alert("Payment cancelled or failed.");
+            },
           },
           prefill: {
             name: billingDetails.firstName + " " + billingDetails.lastName,
@@ -86,26 +118,6 @@ export default function Checkout({ user }) {
         const rzp = new window.Razorpay(options);
         rzp.open();
       }
-
-      // Save order to Firestore
-      const orderData = {
-        userId: user.uid,
-        orderId: `ORD-${Date.now()}`, // Generate unique order ID
-        items: cartItems,
-        subtotal,
-        gst,
-        shipping,
-        total,
-        paymentMethod: payment,
-        billingDetails,
-        status: "Placed", // Can update to "Shipped", etc., later
-        createdAt: new Date(),
-      };
-      await addDoc(collection(db, "orders"), orderData);
-
-      clearCart();
-      setOrderPlaced(true);
-      navigate("/profile"); // 👈 Redirect to profile to show order details
     } catch (error) {
       alert(`Order failed: ${error.message}`);
     }
@@ -146,7 +158,7 @@ export default function Checkout({ user }) {
           Log In
         </button>
 
-        {/* 🔹 Login Modal */}
+        {/* Login Modal */}
         <LoginModal
           isOpen={isLoginOpen}
           onClose={() => setIsLoginOpen(false)}
@@ -156,7 +168,7 @@ export default function Checkout({ user }) {
           }}
         />
 
-        {/* 🔹 Register Modal */}
+        {/* Register Modal */}
         <RegisterModal
           isOpen={isRegisterOpen}
           onClose={() => setIsRegisterOpen(false)}
@@ -188,11 +200,11 @@ export default function Checkout({ user }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-        {/* BILLING DETAILS */}
-        <div className="lg:col-span-2">
-          <h2 className="font-semibold mb-6">Billing details</h2>
-          <form onSubmit={handlePlaceOrder}> {/* 👈 Wrap in form */}
+      <form onSubmit={handlePlaceOrder}> {/* Wrap entire grid in form */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+          {/* BILLING DETAILS */}
+          <div className="lg:col-span-2">
+            <h2 className="font-semibold mb-6">Billing details</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <input
                 name="firstName"
@@ -226,7 +238,7 @@ export default function Checkout({ user }) {
               onChange={handleInputChange}
               className="border p-3 text-sm mt-6 w-full"
             >
-              <option>India</option> {/* 👈 Only India */}
+              <option>India</option> {/* Only India */}
             </select>
 
             <input
@@ -319,117 +331,116 @@ export default function Checkout({ user }) {
               className="border p-3 text-sm mt-6 w-full h-32"
               placeholder="Order notes (optional)"
             ></textarea>
-          </form>
-        </div>
-
-        {/* ORDER SUMMARY (Dynamic, INR, GST) */}
-        <div className="border p-8 h-fit">
-          <h3 className="font-semibold mb-6">Your order</h3>
-
-          <div className="flex justify-between text-sm border-b pb-3 mb-3">
-            <span>Product</span>
-            <span>Subtotal</span>
           </div>
 
-          {/* Dynamic Cart Items */}
-          {cartItems.map((item) => (
-            <div key={item.id} className="flex justify-between text-sm mb-3">
-              <span>{item.title} × {item.quantity}</span>
-              <span>₹{(item.price * item.quantity).toFixed(2)}</span>
+          {/* ORDER SUMMARY (Dynamic, INR, GST) */}
+          <div className="border p-8 h-fit">
+            <h3 className="font-semibold mb-6">Your order</h3>
+
+            <div className="flex justify-between text-sm border-b pb-3 mb-3">
+              <span>Product</span>
+              <span>Subtotal</span>
             </div>
-          ))}
 
-          <div className="flex justify-between text-sm border-b pb-3 mb-3">
-            <span>Subtotal</span>
-            <span>₹{subtotal.toFixed(2)}</span>
-          </div>
+            {/* Dynamic Cart Items */}
+            {cartItems.map((item) => (
+              <div key={item.id} className="flex justify-between text-sm mb-3">
+                <span>{item.title} × {item.quantity}</span>
+                <span>₹{(item.price * item.quantity).toFixed(2)}</span>
+              </div>
+            ))}
 
-          <div className="flex justify-between text-sm border-b pb-3 mb-3">
-            <span>GST (18%)</span> {/* 👈 Added GST */}
-            <span>₹{gst.toFixed(2)}</span>
-          </div>
+            <div className="flex justify-between text-sm border-b pb-3 mb-3">
+              <span>Subtotal</span>
+              <span>₹{subtotal.toFixed(2)}</span>
+            </div>
 
-          {/* SHIPPING */}
-          <div className="text-sm border-b pb-4 mb-4">
-            <p className="mb-3">Shipping</p>
-            <label className="flex justify-between items-center mb-2">
-              <span className="flex items-center gap-2">
-                <input type="radio" checked readOnly />
-                Standard
+            <div className="flex justify-between text-sm border-b pb-3 mb-3">
+              <span>GST (18%)</span> {/* Added GST */}
+              <span>₹{gst.toFixed(2)}</span>
+            </div>
+
+            {/* SHIPPING */}
+            <div className="text-sm border-b pb-4 mb-4">
+              <p className="mb-3">Shipping</p>
+              <label className="flex justify-between items-center mb-2">
+                <span className="flex items-center gap-2">
+                  <input type="radio" checked readOnly />
+                  Standard
+                </span>
+                <span>₹{shipping.toFixed(2)}</span>
+              </label>
+              <label className="flex items-center gap-2 mb-2">
+                <input type="radio" />
+                Express (₹200)
+              </label>
+            </div>
+
+            {/* TOTAL */}
+            <div className="flex justify-between items-center mb-6">
+              <span className="font-medium">Total</span>
+              <span className="text-xl font-semibold">₹{total.toFixed(2)}</span>
+            </div>
+
+            {/* PAYMENT (Indian options) */}
+            <div className="text-sm mb-4">
+              <label className="flex items-center gap-2 mb-2">
+                <input
+                  type="radio"
+                  checked={payment === "upi"}
+                  onChange={() => setPayment("upi")}
+                />
+                UPI
+              </label>
+              <label className="flex items-center gap-2 mt-3">
+                <input
+                  type="radio"
+                  checked={payment === "netbanking"}
+                  onChange={() => setPayment("netbanking")}
+                />
+                Net Banking
+              </label>
+              <label className="flex items-center gap-2 mt-3">
+                <input
+                  type="radio"
+                  checked={payment === "card"}
+                  onChange={() => setPayment("card")}
+                />
+                Credit/Debit Card
+              </label>
+              <label className="flex items-center gap-2 mt-3">
+                <input
+                  type="radio"
+                  checked={payment === "cod"}
+                  onChange={() => setPayment("cod")}
+                />
+                Cash on Delivery
+              </label>
+            </div>
+
+            <p className="text-xs text-gray-500 mb-4">
+              Your personal data will be used to process your order, support your
+              experience throughout this website, and for other purposes described
+              in our <span className="text-red-500">privacy policy</span>.
+            </p>
+
+            <div className="flex items-center gap-2 text-xs mb-6">
+              <input type="checkbox" required />
+              <span>
+                I have read and agree to the website{" "}
+                <span className="text-red-500">terms and conditions</span>
               </span>
-              <span>₹{shipping.toFixed(2)}</span>
-            </label>
-            <label className="flex items-center gap-2 mb-2">
-              <input type="radio" />
-              Express (₹200)
-            </label>
+            </div>
+
+            <button
+              type="submit"
+              className="w-full bg-red-500 text-white py-4 text-sm font-medium"
+            >
+              Place order
+            </button>
           </div>
-
-          {/* TOTAL */}
-          <div className="flex justify-between items-center mb-6">
-            <span className="font-medium">Total</span>
-            <span className="text-xl font-semibold">₹{total.toFixed(2)}</span>
-          </div>
-
-          {/* PAYMENT (Indian options) */}
-          <div className="text-sm mb-4">
-            <label className="flex items-center gap-2 mb-2">
-              <input
-                type="radio"
-                checked={payment === "upi"}
-                onChange={() => setPayment("upi")}
-              />
-              UPI
-            </label>
-            <label className="flex items-center gap-2 mt-3">
-              <input
-                type="radio"
-                checked={payment === "netbanking"}
-                onChange={() => setPayment("netbanking")}
-              />
-              Net Banking
-            </label>
-            <label className="flex items-center gap-2 mt-3">
-              <input
-                type="radio"
-                checked={payment === "card"}
-                onChange={() => setPayment("card")}
-              />
-              Credit/Debit Card
-            </label>
-            <label className="flex items-center gap-2 mt-3">
-              <input
-                type="radio"
-                checked={payment === "cod"}
-                onChange={() => setPayment("cod")}
-              />
-              Cash on Delivery
-            </label>
-          </div>
-
-          <p className="text-xs text-gray-500 mb-4">
-            Your personal data will be used to process your order, support your
-            experience throughout this website, and for other purposes described
-            in our <span className="text-red-500">privacy policy</span>.
-          </p>
-
-          <div className="flex items-center gap-2 text-xs mb-6">
-            <input type="checkbox" required />
-            <span>
-              I have read and agree to the website{" "}
-              <span className="text-red-500">terms and conditions</span>
-            </span>
-          </div>
-
-          <button
-            type="submit"
-            onClick={handlePlaceOrder}
-            className="w-full bg-red-500 text-white py-4 text-sm font-medium"
-          >
-            Place order
-          </button>
         </div>
-      </div>
+      </form>
     </main>
   );
 }
