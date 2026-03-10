@@ -108,7 +108,7 @@ export default function Shop() {
           </div>
 
           {/* Categories */}
-          <div className="mb-6">
+          <div className="mb-6 z-10">
             <h3 className="font-semibold mb-3">Categories</h3>
             <ul className="space-y-2">
               {categories.map((cat) => (

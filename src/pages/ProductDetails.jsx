@@ -34,15 +34,7 @@ export default function ProductDetails() {
   // 👈 Add state for current image index
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-  // 👈 Optional: Auto-cycle images every 3 seconds (remove if you don't want this)
-  useEffect(() => {
-    if (product.images && product.images.length > 1) {
-      const interval = setInterval(() => {
-        setCurrentImageIndex((prevIndex) => (prevIndex + 1) % product.images.length);
-      }, 3000);
-      return () => clearInterval(interval);
-    }
-  }, [product.images]);
+
 
   // 👈 Get related products (exclude current, show up to 4)
   const relatedProducts = products.filter((p) => p.id !== product.id).slice(0, 4);
